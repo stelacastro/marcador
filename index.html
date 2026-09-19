@@ -136,12 +136,14 @@
     <div class="flex-1 overflow-y-auto">
       <div class="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl">
 
-        <div class="flex items-end justify-between gap-4 mb-5">
+        <div class="flex items-end justify-between gap-4 mb-4">
           <div>
             <h1 id="viewTitle" class="text-xl font-semibold text-neutral-900 dark:text-white">Todos os links</h1>
             <p id="viewSubtitle" class="text-[13px] text-neutral-500 mt-0.5">Tudo o que você guardou até agora</p>
           </div>
         </div>
+
+        <div id="tagFilterBar" class="hidden flex-wrap items-center gap-1.5 mt-4 mb-5"></div>
 
         <div id="grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
         <div id="empty" class="hidden"></div>
@@ -188,8 +190,28 @@
       </div>
 
       <div>
-        <label for="fFolder" class="block text-[13px] font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Pasta</label>
-        <select id="fFolder" class="field appearance-none"></select>
+        <label id="fFolderLabel" for="fFolderTrigger" class="block text-[13px] font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Pasta</label>
+        <div class="relative">
+          <button type="button" id="fFolderTrigger" aria-haspopup="listbox"
+            class="field flex items-center justify-between gap-2 text-left">
+            <span id="fFolderTriggerLabel" class="flex items-center gap-2 min-w-0"></span>
+            <svg class="h-4 w-4 shrink-0 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <input type="hidden" id="fFolder" value="" />
+          <div id="fFolderMenu" role="listbox"
+            class="hidden absolute z-20 left-0 right-0 mt-1.5 p-1 rounded-xl border border-line dark:border-line-dark
+                   bg-white dark:bg-raised-dark shadow-pop max-h-56 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <div>
+        <label for="fTagInput" class="block text-[13px] font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">
+          Tags <span class="text-neutral-400 font-normal">— opcional</span>
+        </label>
+        <div id="tagChips" class="hidden flex-wrap gap-1.5 mb-2"></div>
+        <input id="fTagInput" type="text" placeholder="Digite uma tag e pressione Enter" class="field" list="tagSuggestions" autocomplete="off" />
+        <datalist id="tagSuggestions"></datalist>
+        <p class="mt-1.5 text-[12px] text-neutral-500">Separe várias tags com vírgula ou Enter.</p>
       </div>
     </div>
 
@@ -266,6 +288,14 @@
   .dark .field:focus { background: rgba(255,255,255,.06); }
   .field::placeholder { color: #a1a1aa; }
 
+  /* Dropdown de pasta: reforça o que as classes utilitárias não cobrem e o estado "aberto" */
+  #fFolderTrigger.open { border-color: rgba(108,92,255,.6); background: #fff; }
+  .dark #fFolderTrigger.open { background: rgba(255,255,255,.06); }
+  #fFolderTrigger svg { transition: transform .15s; }
+  #fFolderTrigger.open svg { transform: rotate(180deg); }
+  #fFolderMenu { z-index: 20; padding: 4px; max-height: 15rem; }
+  #fFolderMenu:empty { display: none; }
+
   .btn-primary {
     height: 36px; padding: 0 16px; border-radius: 8px; background: #6c5cff; color: #fff;
     font-size: 14px; font-weight: 500; transition: background-color .15s, transform .1s;
@@ -287,6 +317,52 @@
   .dark .folder-item:hover { background: rgba(255,255,255,.05); color: #fff; }
   .folder-item.active { background: rgba(108,92,255,.12); color: #5546e0; font-weight: 500; }
   .dark .folder-item.active { background: rgba(108,92,255,.16); color: #b3a9ff; }
+
+  /* Tags: chip dentro do modal (com botão de remover). Cor de fundo/texto vem inline, da pasta escolhida. */
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 6px 0 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 1;
+    background: rgba(108,92,255,.12); color: #5546e0; white-space: nowrap;
+  }
+  .tag-chip button {
+    display: grid; place-items: center; height: 16px; width: 16px; border-radius: 999px;
+    color: currentColor; opacity: .7; transition: opacity .15s, filter .15s;
+  }
+  .tag-chip button:hover { opacity: 1; filter: brightness(.85); }
+  .dark .tag-chip button:hover { filter: brightness(1.3); }
+
+  /* Tags: chip somente leitura, exibido nos cards. Cor de fundo/texto vem inline, da pasta do link. */
+  .tag-chip-static {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; transition: filter .15s;
+    background: #f4f4f5; color: #71717a;
+  }
+  .tag-chip-static:hover { filter: brightness(.92); }
+  .dark .tag-chip-static:hover { filter: brightness(1.2); }
+
+  /* Tags: pílula clicável na barra de filtro */
+  .tag-pill {
+    display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px;
+    border-radius: 999px; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+    background: #fff; color: #52525b; border: 1px solid #e5e5e7; transition: all .15s;
+  }
+  .dark .tag-pill { background: #1b1f28; color: #a1a1aa; border-color: #262b36; }
+  .tag-pill:hover { border-color: rgba(108,92,255,.5); color: #5546e0; }
+  .dark .tag-pill:hover { color: #b3a9ff; }
+  .tag-pill.active { background: #6c5cff; border-color: #6c5cff; color: #fff; }
+  .tag-pill.active:hover { color: #fff; }
+  .tag-pill-clear { color: #a1a1aa; text-decoration: underline; text-underline-offset: 2px; }
+  .tag-pill-clear:hover { color: #5546e0; }
+
+  /* Favicon: caixa com fallback garantido (inicial do domínio) caso o ícone não carregue */
+  .favicon-box { display: grid; place-items: center; }
+  .favicon-fallback {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: #71717a;
+  }
+  .dark .favicon-fallback { color: #a1a1aa; }
+  .favicon-img { position: relative; z-index: 1; }
+  .favicon-img.is-hidden { display: none; }
 </style>
 
 <script>
@@ -298,23 +374,32 @@
 const STORE_KEY = 'marcador:v1';
 
 const PALETTE = [
-  { name: 'violeta',  hex: '#6c5cff' },
-  { name: 'azul',     hex: '#3b82f6' },
-  { name: 'ciano',    hex: '#06b6d4' },
-  { name: 'verde',    hex: '#10b981' },
-  { name: 'âmbar',    hex: '#f59e0b' },
-  { name: 'laranja',  hex: '#f97316' },
-  { name: 'rosa',     hex: '#ec4899' },
-  { name: 'cinza',    hex: '#8b8b94' }
+  { name: 'violeta',   hex: '#6c5cff' },
+  { name: 'índigo',    hex: '#6366f1' },
+  { name: 'azul',      hex: '#3b82f6' },
+  { name: 'ciano',     hex: '#06b6d4' },
+  { name: 'turquesa',  hex: '#14b8a6' },
+  { name: 'verde',     hex: '#10b981' },
+  { name: 'lima',      hex: '#84cc16' },
+  { name: 'âmbar',     hex: '#f59e0b' },
+  { name: 'laranja',   hex: '#f97316' },
+  { name: 'vermelho',  hex: '#ef4444' },
+  { name: 'rosa',      hex: '#ec4899' },
+  { name: 'fúcsia',    hex: '#d946ef' },
+  { name: 'púrpura',   hex: '#a855f7' },
+  { name: 'terracota', hex: '#b45309' },
+  { name: 'cinza',     hex: '#8b8b94' }
 ];
 
 let state = {
   folders: [],
   links: [],
   activeFolder: 'all',
+  activeTags: new Set(),
   query: '',
   editingLinkId: null,
   editingFolderId: null,
+  editingTags: [],
   pickedColor: PALETTE[0].hex
 };
 
@@ -327,6 +412,7 @@ function load() {
     const data = JSON.parse(raw);
     state.folders = Array.isArray(data.folders) ? data.folders : [];
     state.links   = Array.isArray(data.links)   ? data.links   : [];
+    state.links.forEach(l => { if (!Array.isArray(l.tags)) l.tags = []; });
   } catch (e) {
     console.warn('Não foi possível ler os dados salvos:', e);
     seed();
@@ -370,17 +456,66 @@ function hostOf(url) {
   catch { return url; }
 }
 
+// Converte uma cor hex (#rgb ou #rrggbb) em rgba(...) com a opacidade informada
+function hexToRgba(hex, alpha) {
+  const clean = String(hex || '').replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return `rgba(108,92,255,${alpha})`;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Fallback em camadas para o favicon: tenta uma segunda fonte antes de recorrer à inicial do domínio
+function handleFaviconError(img) {
+  if (img.dataset.step === '0') {
+    img.dataset.step = '1';
+    img.src = 'https://icons.duckduckgo.com/ip3/' + img.dataset.host + '.ico';
+  } else {
+    img.classList.add('is-hidden');
+  }
+}
+
+/* ---------- utilidades de tags ---------- */
+
+function normalizeTag(raw) {
+  return String(raw || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+}
+
+// Adiciona uma ou mais tags (separadas por vírgula) a uma lista, sem duplicar (ignorando maiúsc./minúsc.)
+function addTagsTo(list, raw) {
+  raw.split(',').forEach(piece => {
+    const tag = normalizeTag(piece);
+    if (!tag) return;
+    const exists = list.some(t => t.toLowerCase() === tag.toLowerCase());
+    if (!exists) list.push(tag);
+  });
+  return list;
+}
+
+// Todas as tags já usadas em algum link, ordenadas, sem duplicatas
+function allKnownTags() {
+  const set = new Map(); // chave em minúsculas -> primeira grafia usada
+  state.links.forEach(l => (l.tags || []).forEach(t => {
+    const key = t.toLowerCase();
+    if (!set.has(key)) set.set(key, t);
+  }));
+  return [...set.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
 /* ---------- seleção de elementos ---------- */
 
 const $ = (sel) => document.querySelector(sel);
 const el = {
   sidebar: $('#sidebar'), overlay: $('#overlay'),
   folderList: $('#folderList'), allCount: $('#allCount'), countLabel: $('#countLabel'),
-  grid: $('#grid'), empty: $('#empty'),
+  grid: $('#grid'), empty: $('#empty'), tagFilterBar: $('#tagFilterBar'),
   viewTitle: $('#viewTitle'), viewSubtitle: $('#viewSubtitle'),
   search: $('#search'), clearSearch: $('#btnClearSearch'),
   linkModal: $('#linkModal'), folderModal: $('#folderModal'), confirmModal: $('#confirmModal'),
   fUrl: $('#fUrl'), fTitle: $('#fTitle'), fDesc: $('#fDesc'), fFolder: $('#fFolder'), urlError: $('#urlError'),
+  fFolderTrigger: $('#fFolderTrigger'), fFolderTriggerLabel: $('#fFolderTriggerLabel'), fFolderMenu: $('#fFolderMenu'),
+  fTagInput: $('#fTagInput'), tagChips: $('#tagChips'), tagSuggestions: $('#tagSuggestions'),
   fFolderName: $('#fFolderName'), folderError: $('#folderError'), swatches: $('#swatches'),
   toast: $('#toast'), toastText: $('#toastText'), toastIcon: $('#toastIcon')
 };
@@ -455,6 +590,7 @@ function renderFolders() {
 
 function visibleLinks() {
   const q = state.query.trim().toLowerCase();
+  const activeTags = [...state.activeTags];
   return state.links
     .filter(l => state.activeFolder === 'all' || l.folderId === state.activeFolder)
     .filter(l => {
@@ -463,7 +599,44 @@ function visibleLinks() {
           || (l.desc  || '').toLowerCase().includes(q)
           || (l.url   || '').toLowerCase().includes(q);
     })
+    .filter(l => {
+      if (activeTags.length === 0) return true;
+      const linkTags = (l.tags || []).map(t => t.toLowerCase());
+      return activeTags.every(t => linkTags.includes(t));
+    })
     .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function renderTagFilterBar() {
+  const tags = allKnownTags();
+
+  if (tags.length === 0) {
+    el.tagFilterBar.classList.add('hidden');
+    el.tagFilterBar.classList.remove('flex');
+    el.tagFilterBar.innerHTML = '';
+    return;
+  }
+
+  el.tagFilterBar.classList.remove('hidden');
+  el.tagFilterBar.classList.add('flex');
+
+  const pills = tags.map(tag => {
+    const active = state.activeTags.has(tag.toLowerCase());
+    return `<button data-tag-pill="${escapeAttr(tag)}" class="tag-pill${active ? ' active' : ''}">#${escapeHtml(tag)}</button>`;
+  }).join('');
+
+  const clear = state.activeTags.size > 0
+    ? `<button id="btnClearTags" class="tag-pill tag-pill-clear" style="background:transparent;border-color:transparent">Limpar tags</button>`
+    : '';
+
+  el.tagFilterBar.innerHTML = pills + clear;
+}
+
+function toggleTagFilter(tag) {
+  const key = tag.toLowerCase();
+  if (state.activeTags.has(key)) state.activeTags.delete(key);
+  else state.activeTags.add(key);
+  renderLinks();
 }
 
 function renderLinks() {
@@ -475,6 +648,7 @@ function renderLinks() {
     ? `${items.length} ${items.length === 1 ? 'resultado' : 'resultados'} para “${state.query}”`
     : (folder ? `${items.length} ${items.length === 1 ? 'link nesta pasta' : 'links nesta pasta'}` : 'Tudo o que você guardou até agora');
 
+  renderTagFilterBar();
   el.grid.innerHTML = '';
 
   if (items.length === 0) {
@@ -490,16 +664,20 @@ function renderLinks() {
   items.forEach(link => {
     const f = state.folders.find(x => x.id === link.folderId);
     const host = hostOf(link.url);
+    const initial = (host.replace(/^[^a-z0-9]/i, '')[0] || '?').toUpperCase();
+    const tagColor = f ? f.color : '#8b8b94';
     const card = document.createElement('article');
     card.className = `group relative flex flex-col rounded-xl p-4
                       bg-white dark:bg-raised-dark border border-line dark:border-line-dark
                       hover:border-accent/50 dark:hover:border-accent/50 transition-colors`;
     card.innerHTML = `
       <div class="flex items-start gap-3">
-        <div class="h-9 w-9 shrink-0 rounded-lg grid place-items-center overflow-hidden
-                    bg-neutral-100 dark:bg-white/[.06] text-[13px] font-semibold text-neutral-500">
+        <div class="favicon-box h-9 w-9 shrink-0 rounded-lg overflow-hidden relative
+                    bg-neutral-100 dark:bg-white/[.06]">
+          <span class="favicon-fallback">${escapeHtml(initial)}</span>
           <img src="https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}"
-               alt="" class="h-5 w-5" onerror="this.remove()" />
+               alt="" class="favicon-img h-5 w-5" data-step="0" data-host="${escapeAttr(host)}"
+               onerror="handleFaviconError(this)" />
         </div>
         <div class="min-w-0 flex-1">
           <a href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer"
@@ -511,6 +689,12 @@ function renderLinks() {
       </div>
 
       ${link.desc ? `<p class="text-[13px] leading-relaxed text-neutral-600 dark:text-neutral-400 mt-3 line-clamp-3">${escapeHtml(link.desc)}</p>` : ''}
+
+      ${(link.tags && link.tags.length) ? `
+        <div class="flex flex-wrap gap-1.5 mt-5">
+          ${link.tags.map(t => `<button data-tag-chip="${escapeAttr(t)}" class="tag-chip-static"
+              style="background:${hexToRgba(tagColor, .15)};color:${tagColor}">#${escapeHtml(t)}</button>`).join('')}
+        </div>` : ''}
 
       <div class="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-line dark:border-line-dark">
         ${f ? `<span class="inline-flex items-center gap-1.5 text-[11.5px] text-neutral-500 min-w-0">
@@ -550,6 +734,13 @@ function emptyState(folder) {
          class="btn-ghost mt-4 inline-flex">Limpar busca</button>`);
   }
 
+  if (state.activeTags.size > 0) {
+    const chosen = [...state.activeTags].map(t => '#' + t).join(', ');
+    return box('Nenhum link com essas tags',
+      `Nenhum link tem todas estas tags ao mesmo tempo: ${escapeHtml(chosen)}.`,
+      `<button onclick="state.activeTags.clear();renderLinks();" class="btn-ghost mt-4 inline-flex">Limpar tags</button>`);
+  }
+
   if (folder) {
     return box('Nenhum link salvo nesta pasta',
       `A pasta ${escapeHtml(folder.name)} está vazia. Salve o primeiro endereço aqui.`,
@@ -572,20 +763,120 @@ const escapeAttr = escapeHtml;
 
 /* ---------- modal: link ---------- */
 
-function fillFolderSelect(selectedId) {
-  el.fFolder.innerHTML = '';
-  if (state.folders.length === 0) {
-    el.fFolder.innerHTML = '<option value="">Sem pasta</option>';
-    return;
-  }
-  state.folders.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.id;
-    opt.textContent = f.name;
-    if (f.id === selectedId) opt.selected = true;
-    el.fFolder.appendChild(opt);
-  });
+function currentEditingFolderColor() {
+  const folder = state.folders.find(f => f.id === el.fFolder.value);
+  return folder ? folder.color : '#6c5cff';
 }
+
+function renderTagChips() {
+  if (state.editingTags.length === 0) {
+    el.tagChips.classList.add('hidden');
+    el.tagChips.classList.remove('flex');
+    el.tagChips.innerHTML = '';
+  } else {
+    const color = currentEditingFolderColor();
+    el.tagChips.classList.remove('hidden');
+    el.tagChips.classList.add('flex');
+    el.tagChips.innerHTML = state.editingTags.map(t => `
+      <span class="tag-chip" style="background:${hexToRgba(color, .15)};color:${color}">
+        #${escapeHtml(t)}
+        <button type="button" data-tag-remove="${escapeAttr(t)}" title="Remover tag">
+          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </span>`).join('');
+  }
+  renderTagSuggestions();
+}
+
+function renderTagSuggestions() {
+  const used = new Set(state.editingTags.map(t => t.toLowerCase()));
+  el.tagSuggestions.innerHTML = allKnownTags()
+    .filter(t => !used.has(t.toLowerCase()))
+    .map(t => `<option value="${escapeAttr(t)}"></option>`).join('');
+}
+
+function commitTagInput() {
+  const raw = el.fTagInput.value.trim();
+  if (!raw) return;
+  addTagsTo(state.editingTags, raw);
+  el.fTagInput.value = '';
+  renderTagChips();
+}
+
+el.fTagInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    commitTagInput();
+  } else if (e.key === 'Backspace' && el.fTagInput.value === '' && state.editingTags.length > 0) {
+    state.editingTags.pop();
+    renderTagChips();
+  }
+});
+el.fTagInput.addEventListener('blur', commitTagInput);
+
+el.tagChips.addEventListener('click', e => {
+  const btn = e.target.closest('[data-tag-remove]');
+  if (!btn) return;
+  const tag = btn.dataset.tagRemove.toLowerCase();
+  state.editingTags = state.editingTags.filter(t => t.toLowerCase() !== tag);
+  renderTagChips();
+});
+
+el.fFolder.addEventListener('change', renderTagChips);
+
+function setFolderTriggerLabel(item) {
+  el.fFolderTriggerLabel.innerHTML = `
+    <span class="h-2.5 w-2.5 rounded-[4px] shrink-0" style="background:${item.color}"></span>
+    <span class="truncate">${escapeHtml(item.name)}</span>`;
+}
+
+function fillFolderSelect(selectedId) {
+  const list = state.folders.length === 0 ? [{ id: '', name: 'Sem pasta', color: '#8b8b94' }] : state.folders;
+  const chosen = list.find(f => f.id === selectedId) || list[0];
+
+  el.fFolder.value = chosen.id;
+  setFolderTriggerLabel(chosen);
+
+  el.fFolderMenu.innerHTML = list.map(f => `
+    <button type="button" data-folder-option="${f.id}"
+      class="folder-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors${f.id === chosen.id ? ' active' : ''}">
+      <span class="h-2.5 w-2.5 rounded-[4px] shrink-0" style="background:${f.color}"></span>
+      <span class="flex-1 text-left truncate">${escapeHtml(f.name)}</span>
+    </button>`).join('');
+}
+
+function openFolderMenu() {
+  el.fFolderMenu.classList.remove('hidden');
+  el.fFolderTrigger.classList.add('open');
+  el.fFolderTrigger.setAttribute('aria-expanded', 'true');
+}
+function closeFolderMenu() {
+  el.fFolderMenu.classList.add('hidden');
+  el.fFolderTrigger.classList.remove('open');
+  el.fFolderTrigger.setAttribute('aria-expanded', 'false');
+}
+
+el.fFolderTrigger.addEventListener('click', e => {
+  e.stopPropagation();
+  if (el.fFolderMenu.classList.contains('hidden')) openFolderMenu();
+  else closeFolderMenu();
+});
+
+el.fFolderMenu.addEventListener('click', e => {
+  const btn = e.target.closest('[data-folder-option]');
+  if (!btn) return;
+  const id = btn.dataset.folderOption;
+  const folder = state.folders.find(f => f.id === id) || { id: '', name: 'Sem pasta', color: '#8b8b94' };
+  el.fFolder.value = id;
+  setFolderTriggerLabel(folder);
+  el.fFolderMenu.querySelectorAll('[data-folder-option]').forEach(b => b.classList.toggle('active', b === btn));
+  closeFolderMenu();
+  el.fFolder.dispatchEvent(new Event('change'));
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#fFolderTrigger') && !e.target.closest('#fFolderMenu')) closeFolderMenu();
+});
 
 function openLinkModal(linkId = null) {
   state.editingLinkId = linkId;
@@ -601,6 +892,10 @@ function openLinkModal(linkId = null) {
   const preselect = link ? link.folderId : (state.activeFolder !== 'all' ? state.activeFolder : (state.folders[0] && state.folders[0].id));
   fillFolderSelect(preselect);
 
+  state.editingTags = link ? [...(link.tags || [])] : [];
+  el.fTagInput.value = '';
+  renderTagChips();
+
   show(el.linkModal);
   setTimeout(() => el.fUrl.focus(), 40);
 }
@@ -614,11 +909,14 @@ function saveLink() {
     return;
   }
 
+  commitTagInput();
+
   const payload = {
     url,
     title: el.fTitle.value.trim(),
     desc: el.fDesc.value.trim(),
-    folderId: el.fFolder.value || null
+    folderId: el.fFolder.value || null,
+    tags: [...state.editingTags]
   };
 
   if (state.editingLinkId) {
@@ -751,6 +1049,7 @@ async function copyLink(id) {
 function show(modal) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
 function hide(modal) {
   modal.classList.add('hidden');
+  if (modal === el.linkModal) closeFolderMenu();
   if (!document.querySelector('#linkModal:not(.hidden), #folderModal:not(.hidden), #confirmModal:not(.hidden)')) {
     document.body.style.overflow = '';
   }
@@ -762,6 +1061,7 @@ document.querySelectorAll('[data-close]').forEach(b => {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    if (!el.fFolderMenu.classList.contains('hidden')) { closeFolderMenu(); return; }
     document.querySelectorAll('#linkModal, #folderModal, #confirmModal').forEach(m => {
       if (!m.classList.contains('hidden')) hide(m);
     });
@@ -812,7 +1112,9 @@ $('#btnTheme').addEventListener('click', () => {
 /* ---------- eventos globais de clique ---------- */
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-folder],[data-edit-folder],[data-del-folder],[data-copy],[data-edit],[data-del]');
+  if (e.target.closest('#btnClearTags')) { state.activeTags.clear(); renderLinks(); return; }
+
+  const t = e.target.closest('[data-folder],[data-edit-folder],[data-del-folder],[data-copy],[data-edit],[data-del],[data-tag-pill],[data-tag-chip]');
   if (!t) return;
 
   if (t.dataset.folder)      { state.activeFolder = t.dataset.folder; render(); closeSidebar(); }
@@ -821,6 +1123,8 @@ document.addEventListener('click', e => {
   if (t.dataset.copy)        copyLink(t.dataset.copy);
   if (t.dataset.edit)        openLinkModal(t.dataset.edit);
   if (t.dataset.del)         deleteLink(t.dataset.del);
+  if (t.dataset.tagPill)     toggleTagFilter(t.dataset.tagPill);
+  if (t.dataset.tagChip)     toggleTagFilter(t.dataset.tagChip);
 });
 
 $('#btnNewFolder').addEventListener('click', () => openFolderModal());
